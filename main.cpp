@@ -48,7 +48,7 @@ int main() {
   // Set a timer to periodically call led_blink_periodic().
   RtosTimer ledBlinkTimer(led_blink_periodic);
   ledBlinkTimer.start(1000);
-
+  serial.printf("Hello, again!\r\n");
   // Work is done in the threads, so main() can sleep.
   Thread::wait(osWaitForever);
 }
