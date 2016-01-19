@@ -24,12 +24,29 @@ void led_fade_thread(void const *args) {
   }
 }
 
+void putchar_thread(void const *args)
+{   char c= 'x';
+	while(1)
+	{ Thread::wait(1000);
+		serial.putc(c);
+	}
+}
+
+void putchar_thread1(void const *args)
+{   char c= 'y';
+	while(1)
+	{ Thread::wait(1001);
+		serial.putc(c);
+	}
+}
+
 void led_blink_periodic(void const *args) {
   // Toggle the red LED when this function is called.
   led_red = !led_red;
 }
 
 int main() {
+	long value;
   // It's always nice to know what version is deployed.
   serial.printf("Built " __DATE__ " " __TIME__ "\r\n");
   
@@ -45,10 +62,18 @@ int main() {
   // Start a thread running led_fade_thread().
   Thread ledFadeThread(led_fade_thread);
   
+	// Start a thread running character printing
+	Thread putcharThread(putchar_thread);
+	Thread putcharThread1(putchar_thread1);
+	
   // Set a timer to periodically call led_blink_periodic().
   RtosTimer ledBlinkTimer(led_blink_periodic);
   ledBlinkTimer.start(1000);
   serial.printf("Hello, again!\r\n");
+	
+	// look at status of a thread
+	value = putcharThread.get_state();
+	serial.printf("get_state() %d", (long) value);
   // Work is done in the threads, so main() can sleep.
   Thread::wait(osWaitForever);
 }
