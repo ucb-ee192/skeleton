@@ -45,8 +45,21 @@ void led_blink_periodic(void const *args) {
   led_red = !led_red;
 }
 
+
+//void print_thread_status(long value)
+//{
+//		switch(value)
+//		{ case 0: serial.putc('0');
+//		  case 1: serial.putc('R');
+//			default: serial.putc('?');
+//		
+//		}
+//}
+
 int main() {
-	long value;
+	long value1;
+	//long value2;
+	
   // It's always nice to know what version is deployed.
   serial.printf("Built " __DATE__ " " __TIME__ "\r\n");
   
@@ -72,8 +85,18 @@ int main() {
   serial.printf("Hello, again!\r\n");
 	
 	// look at status of a thread
-	value = putcharThread.get_state();
-	serial.printf("get_state() %d", (long) value);
+	
+	value1 = putcharThread.get_state();
+	//value2 = putcharThread1.get_state();
+	serial.printf("putcharThread: %d |", (long) value1);
+	//serial.printf("putcharThread1 %d", (long) value2);
+	//serial.printf("putcharThread: ");
+	//print_thread_status(value1);
+	//serial.printf("putcharThread1: ");
+	//print_thread_status(value2);
+	
+	
+	//serial.printf("get_state() %d", (long) value);
   // Work is done in the threads, so main() can sleep.
   Thread::wait(osWaitForever);
 }
