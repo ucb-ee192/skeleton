@@ -1,6 +1,9 @@
+/* !!! needs full licened compiler version !!!
+*/
 #include "mbed.h"
 #include "rtos.h"
 #include "MODSERIAL.h"
+#include "stdint.h"
 
 MODSERIAL serial(USBTX, USBRX);
 
@@ -8,15 +11,7 @@ DigitalOut led_green(LED_GREEN);
 DigitalOut led_red(LED_RED);
 PwmOut led_blue(LED_BLUE);
 
-volatile uint32_t msTicks;                            /* counts 1ms timeTicks */
-volatile static int delay=0;
-/*----------------------------------------------------------------------------
-  SysTick_Handler
- *----------------------------------------------------------------------------*/
-void SysTick_Handler(void) {
-    msTicks++;                        /* increment counter necessary in Delay() */     
-    delay++;
-}
+
 
 void led_fade_thread(void const *args) {
   // Note that this function doesn't terminate, which is fine since it runs in
@@ -44,13 +39,14 @@ void putchar_thread(void const *args)
 
 void putchar_thread1(void const *args)
 {   char c= 'y'; 
-	//long value;
+	long start, end;
 	while(1)
 	{ Thread::wait(1001);
 		serial.putc(c);
-//		value = putcharThread1.get_state();
-		serial.printf("putcharThread1: ");
-	//  print_thread_status(value1);
+		start = SysTick->VAL; //before printf
+		serial.printf("SysTick < %ld . |", start);
+		end = SysTick->VAL;
+		serial.printf("SysTick >  %ld . |", end);
 	}
 }
 
@@ -79,10 +75,13 @@ void print_thread_status(long value)
 int main() {
 	long value1;
 	long value2;
-	long ticks;
+	uint32_t ticks;
+	uint32_t returnCode;
+	
+	returnCode = SysTick_Config ((uint32_t)(SystemCoreClock / 10000)); //100us granularity
 	
   // It's always nice to know what version is deployed.
-  serial.printf("Built " __DATE__ " " __TIME__ "\r\n");
+  serial.printf("\n Built " __DATE__ " " __TIME__ "\r\n");
   
   // Quick blink on startup.
   led_green = 0;  // Note that the internal LED is active low.
