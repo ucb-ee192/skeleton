@@ -7,6 +7,8 @@
 #include "rt_Time.h"
 #include "MODSERIAL.h"
 #include "stdint.h"
+// using rtos builtin timer
+uint32_t systime = 0; // systime updated every 100 us for timing purposes
 
 MODSERIAL serial(USBTX, USBRX);
 
@@ -34,10 +36,16 @@ void led_fade_thread(void const *args) {
 }
 
 void putchar_thread(void const *args)
-{   char c= 'x';
+{ char c= 'x';
+	long start, end;
 	while(1)
-	{ Thread::wait(1000);
-		serial.putc(c);
+	{ Thread::wait(20000); // should be 2.0 sec
+  	serial.putc(c);
+		start = (long) os_time;
+		serial.printf("putchar_thread: bbbbbbbbbbbb \r\n");
+		end = (long) os_time;
+		serial.printf("systime = %ld, start = %ld, end = %ld, elapsed time %ld .\r\n", 
+					systime, start, end, end-start);
 	}
 }
 
@@ -45,13 +53,13 @@ void putchar_thread1(void const *args)
 {   char c= 'y'; 
 	long start, end;
 	while(1)
-	{ Thread::wait(1001);
-		serial.putc(c);
-		//start = SysTick->VAL; //before printf
-		start = os_time;
-		serial.printf("SysTick < %ld . |", start);
-		end = os_time;
-		serial.printf("SysTick >  %ld . |", end);
+	{ Thread::wait(20000); // should be 2.0 sec
+    serial.putc(c);
+		start = (long) os_time;
+		serial.printf(" putchar_thread1: aaaaaaaaaaaaa \r\n");
+		end = (long) os_time;
+		serial.printf("systime = %ld, start = %ld, end = %ld, elapsed time %ld .\r\n", 
+					systime, start, end, end-start);
 	}
 }
 
@@ -73,11 +81,12 @@ void led_blink_periodic(void const *args) {
   led_red = !led_red;
 }
 
-// using rtos builtin timer
-uint32_t systime = 0; // systime updated every 100 us for timing purposes
 
+// systime is not needed since internal ostime runs at same 100 us rate.
 void RealTime(void const *args)
 { systime++;
+	if ((os_time % 100) == 0) 
+	{ serial.putc('.'); }    // every 10 ms- lets see if blocks
 }
 
 
@@ -85,7 +94,6 @@ void RealTime(void const *args)
 int main() {
 	long value1;
 	long value2;
-	uint32_t ticks;
 	uint32_t returnCode;
 	
   // It's always nice to know what version is deployed.
@@ -93,7 +101,7 @@ int main() {
   returnCode = SysTick_Config ((uint32_t)(SystemCoreClock / 10000)); //100us granularity
 	serial.printf("SysTick: returnCode: 0x%lx ", returnCode);
 	serial.printf("SysTick: Load %lx ", SysTick->LOAD);
-	
+	serial.printf("starting time %ld |", os_time);
 	
   // Quick blink on startup.
   led_green = 0;  // Note that the internal LED is active low.
@@ -102,9 +110,9 @@ int main() {
   wait(0.25);
   
   // Mandatory "Hello, world!".
-  serial.printf("Hello, world!\r\n");
-	ticks = SysTick->VAL;
-  serial.printf("starting time %ld |", ticks);
+  serial.printf("\r\n Hello, world!\r\n");
+	
+ 
   // Start a thread running led_fade_thread().
   Thread ledFadeThread(led_fade_thread);
   
@@ -126,9 +134,7 @@ int main() {
 	
 	value1 = putcharThread.get_state();
 	value2 = putcharThread1.get_state();
-	//serial.printf("putcharThread: %d |", (long) value1);
-	//serial.printf("putcharThread1 %d", (long) value2);
-	
+		
 	 serial.printf("putcharThread: ");
 	 print_thread_status(value1);
 	 serial.printf("putcharThread1: ");
