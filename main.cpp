@@ -1,7 +1,10 @@
 /* !!! needs full licened compiler version !!!
 */
+// see https://developer.mbed.org/handbook/RTOS  for RTOS documentation 
+
 #include "mbed.h"
 #include "rtos.h"
+#include "rt_Time.h"
 #include "MODSERIAL.h"
 #include "stdint.h"
 
@@ -10,6 +13,7 @@ MODSERIAL serial(USBTX, USBRX);
 DigitalOut led_green(LED_GREEN);
 DigitalOut led_red(LED_RED);
 PwmOut led_blue(LED_BLUE);
+
 
 
 
@@ -43,32 +47,38 @@ void putchar_thread1(void const *args)
 	while(1)
 	{ Thread::wait(1001);
 		serial.putc(c);
-		start = SysTick->VAL; //before printf
+		//start = SysTick->VAL; //before printf
+		start = os_time;
 		serial.printf("SysTick < %ld . |", start);
-		end = SysTick->VAL;
+		end = os_time;
 		serial.printf("SysTick >  %ld . |", end);
 	}
 }
 
-void led_blink_periodic(void const *args) {
-  // Toggle the red LED when this function is called.
-  led_red = !led_red;
-}
-
-
 void print_thread_status(long value)
-{
-		switch(value)
+{		switch(value)
 		{ case 0: serial.printf("Inactive "); break;
 		  case 1: serial.printf("Ready "); break;
 			case 2: serial.printf("Running "); break;
 			case 3: serial.printf("WaitingDelay "); break;
 			case 4: serial.printf("WaitingInterval "); break;
 			default: serial.putc('?');
-		
 		}
 }
 
+/// using RTOS built in timer:
+
+void led_blink_periodic(void const *args) {
+  // Toggle the red LED when this function is called.
+  led_red = !led_red;
+}
+
+// using rtos builtin timer
+uint32_t systime = 0; // systime updated every 100 us for timing purposes
+
+void RealTime(void const *args)
+{ systime++;
+}
 
 
 
@@ -78,11 +88,13 @@ int main() {
 	uint32_t ticks;
 	uint32_t returnCode;
 	
-	returnCode = SysTick_Config ((uint32_t)(SystemCoreClock / 10000)); //100us granularity
-	
   // It's always nice to know what version is deployed.
-  serial.printf("\n Built " __DATE__ " " __TIME__ "\r\n");
-  
+  serial.printf("\n\r Built " __DATE__ " " __TIME__ "\r\n");
+  returnCode = SysTick_Config ((uint32_t)(SystemCoreClock / 10000)); //100us granularity
+	serial.printf("SysTick: returnCode: 0x%lx ", returnCode);
+	serial.printf("SysTick: Load %lx ", SysTick->LOAD);
+	
+	
   // Quick blink on startup.
   led_green = 0;  // Note that the internal LED is active low.
   wait(0.25);
@@ -103,6 +115,11 @@ int main() {
   // Set a timer to periodically call led_blink_periodic().
   RtosTimer ledBlinkTimer(led_blink_periodic);
   ledBlinkTimer.start(1000);
+	
+	// RtosTimer realTimeTimer(RealTime,osTimerPeriodic, NULL);
+	RtosTimer realTimeTimer(RealTime);
+	realTimeTimer.start(1); // 1 millisecond timing
+	
   serial.printf("Hello, again!\r\n");
 	
 	// look at status of a thread
