@@ -68,9 +68,24 @@ void putchar_thread1(void const *args)
 
 
 // print thread - non blocking method for handling printing
+#define PRNBUFSZ 0x100
+extern char printbuffer[PRNBUFSZ];
+extern int prnbuf_count;   /* number of characters in buffer */
+extern int prnbuf_pos;   /* location to store characters */
+
 void print_thread(void const *args)
 { Thread::wait(1000); // should be 0.1 sec}
+	/* called from interrupt routine */
+  char c; int index;
+  if (prnbuf_count > 0)  /* there are characters to print */
+  {  index = prnbuf_pos - prnbuf_count;
+     if(index < 0) index = index +PRNBUFSZ;  /* wrap around */
+     c = printbuffer[index];
+		 serial.putc(c); // print one character, blocking or not
+     prnbuf_count--;
+  }
 }
+
 	
 	
 void print_thread_status(long value)
