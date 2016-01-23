@@ -435,6 +435,16 @@
               <FileType>8</FileType>
               <FilePath>main.cpp</FilePath>
             </File>
+            <File>
+              <FileName>printf-stdarg.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\printf-stdarg.c</FilePath>
+            </File>
+            <File>
+              <FileName>printbuf.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\printbuf.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

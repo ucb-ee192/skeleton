@@ -9,7 +9,9 @@
 #include "stdint.h"
 // using rtos builtin timer
 uint32_t systime = 0; // systime updated every 100 us for timing purposes
+uint32_t systime1 = 0; // systime updated every 100 us for timing purposes
 
+extern int printfNB(const char *format, ...);
 MODSERIAL serial(USBTX, USBRX);
 
 DigitalOut led_green(LED_GREEN);
@@ -39,7 +41,8 @@ void putchar_thread(void const *args)
 { char c= 'x';
 	long start, end;
 	while(1)
-	{ Thread::wait(20000); // should be 2.0 sec
+	{
+		Thread::wait(20000); // should be 2.0 sec
   	serial.putc(c);
 		start = (long) os_time;
 		serial.printf("putchar_thread: bbbbbbbbbbbb \r\n");
@@ -63,6 +66,13 @@ void putchar_thread1(void const *args)
 	}
 }
 
+
+// print thread - non blocking method for handling printing
+void print_thread(void const *args)
+{ Thread::wait(1000); // should be 0.1 sec}
+}
+	
+	
 void print_thread_status(long value)
 {		switch(value)
 		{ case 0: serial.printf("Inactive "); break;
@@ -84,9 +94,26 @@ void led_blink_periodic(void const *args) {
 
 // systime is not needed since internal ostime runs at same 100 us rate.
 void RealTime(void const *args)
-{ systime++;
-	if ((os_time % 100) == 0) 
+{ uint32_t timeval; // read just once in case updated by another interrupt
+	systime++;
+	timeval=os_time; // assume atomic?
+	if ((timeval % 100) == 0) 
 	{ serial.putc('.'); }    // every 10 ms- lets see if blocks
+	if((timeval % 10000) == 0) 
+		{ //serial.putc('!');
+			serial.printf("\r\n RealTime: systime - os_time=%ld, systime1 - os_time %ld",
+					systime-timeval, systime1 - timeval);
+		 }    // every 1000 ms- lets see if delays
+}
+
+// systime is not needed since internal ostime runs at same 100 us rate.
+void RealTime1(void const *args)
+{ systime1++;
+//	if ((os_time % 100) == 0) 
+//	{ serial.putc('.'); }    // every 10 ms- lets see if blocks
+//	if((os_time % 10000) == 0) 
+//		{ serial.printf("RealTime1: systime1 - os_time=%ld .", systime1-os_time);
+//		 }    // every 1000 ms- lets see if delays
 }
 
 
@@ -112,6 +139,9 @@ int main() {
   // Mandatory "Hello, world!".
   serial.printf("\r\n Hello, world!\r\n");
 	
+  // start a thread to handle printing without blocking
+	Thread printThread(print_thread);
+ 
  
   // Start a thread running led_fade_thread().
   Thread ledFadeThread(led_fade_thread);
@@ -126,7 +156,10 @@ int main() {
 	
 	// RtosTimer realTimeTimer(RealTime,osTimerPeriodic, NULL);
 	RtosTimer realTimeTimer(RealTime);
-	realTimeTimer.start(1); // 1 millisecond timing
+	realTimeTimer.start(2); // .2 millisecond timing
+	// RtosTimer realTimeTimer(RealTime,osTimerPeriodic, NULL);
+	RtosTimer realTimeTimer1(RealTime1);
+	realTimeTimer1.start(2); // 0.2 millisecond timing
 	
   serial.printf("Hello, again!\r\n");
 	
