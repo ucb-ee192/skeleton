@@ -21,10 +21,10 @@
 	putchar is the only external dependency for this file,
 	if you have a working putchar, leave it commented out.
 	If not, uncomment the define below and
-	replace outbyte(c) by your own function call.
+	replace outbyte(c) by your own function call. */
 
-#define putchar(c) outbyte(c)
-*/
+#define putchar(c) putcharNB(c)
+
 
 #include <stdarg.h>
 
@@ -182,7 +182,7 @@ static int print(char **out, const char *format, va_list args )
 	return pc;
 }
 
-int printf(const char *format, ...)
+int printfNB(const char *format, ...)
 {
         va_list args;
         

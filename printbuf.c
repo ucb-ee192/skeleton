@@ -17,8 +17,8 @@ int prnbuf_count = 0;   /* number of characters in buffer */
 int prnbuf_pos = 0;   /* location to store characters */
 
 
-// overload putchar to use print to ring buffer instead
-int putchar(int c)  {
+// overload putchar to use non-blocking print to ring buffer instead
+int putcharNB(int c)  {
   	if (c == '\n') putchar_buf(CR);
 	putchar_buf(c);
 	return(c);	} 
@@ -43,7 +43,7 @@ int putchar_buf(int c)
 int write (int file, char * ptr, int len) {
   int i;
 
-  for (i = 0; i < len; i++) putchar(*ptr++);
+  for (i = 0; i < len; i++) putcharNB(*ptr++);
   return len;
 }
 

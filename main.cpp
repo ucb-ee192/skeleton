@@ -2,6 +2,14 @@
 */
 // see https://developer.mbed.org/handbook/RTOS  for RTOS documentation 
 
+
+/*********************************
+printfNB: is a minimal printf for high speed, and compact space.
+types recognized: %d, %s, %x, %X
+
+*****************************/
+
+
 #include "mbed.h"
 #include "rtos.h"
 #include "rt_Time.h"
@@ -11,7 +19,9 @@
 uint32_t systime = 0; // systime updated every 100 us for timing purposes
 uint32_t systime1 = 0; // systime updated every 100 us for timing purposes
 
-extern int printfNB(const char *format, ...);
+extern "C" { extern int printfNB(const char *format, ...); }
+extern "C" {extern int putcharNB(int);}
+
 MODSERIAL serial(USBTX, USBRX);
 
 DigitalOut led_green(LED_GREEN);
@@ -43,7 +53,8 @@ void putchar_thread(void const *args)
 	while(1)
 	{
 		Thread::wait(20000); // should be 2.0 sec
-  	serial.putc(c);
+  	// serial.putc(c); // blocks 
+		putcharNB(c); // non blocking
 		start = (long) os_time;
 		serial.printf("putchar_thread: bbbbbbbbbbbb \r\n");
 		end = (long) os_time;
@@ -74,16 +85,19 @@ extern int prnbuf_count;   /* number of characters in buffer */
 extern int prnbuf_pos;   /* location to store characters */
 
 void print_thread(void const *args)
-{ Thread::wait(1000); // should be 0.1 sec}
+{ char c; int index;
+	while(1)
+	{	Thread::wait(1000); // should be 0.1 sec}
 	/* called from interrupt routine */
-  char c; int index;
-  if (prnbuf_count > 0)  /* there are characters to print */
-  {  index = prnbuf_pos - prnbuf_count;
-     if(index < 0) index = index +PRNBUFSZ;  /* wrap around */
-     c = printbuffer[index];
-		 serial.putc(c); // print one character, blocking or not
-     prnbuf_count--;
-  }
+  	serial.putc('z');
+		while (prnbuf_count > 0)  /* there are characters to print */
+		{  index = prnbuf_pos - prnbuf_count;
+       if(index < 0) index = index +PRNBUFSZ;  /* wrap around */
+       c = printbuffer[index];
+		   serial.putc(c); // print one character, blocking or not
+       prnbuf_count--;
+		}
+	}
 }
 
 	
@@ -116,7 +130,9 @@ void RealTime(void const *args)
 	{ serial.putc('.'); }    // every 10 ms- lets see if blocks
 	if((timeval % 10000) == 0) 
 		{ //serial.putc('!');
-			serial.printf("\r\n RealTime: systime - os_time=%ld, systime1 - os_time %ld",
+			printfNB("\r\nRealTime: systime -os_time =");
+			printfNB("%d", (long) (systime- os_time)); 
+			printfNB("\r\n RealTime: systime - os_time=%d, systime1 - os_time %d",
 					systime-timeval, systime1 - timeval);
 		 }    // every 1000 ms- lets see if delays
 }
@@ -177,6 +193,7 @@ int main() {
 	realTimeTimer1.start(2); // 0.2 millisecond timing
 	
   serial.printf("Hello, again!\r\n");
+	serial.printf("sizeof(int) = %d, sizeof(long) = %d\n", sizeof(int), sizeof(long));
 	
 	// look at status of a thread
 	
