@@ -47,7 +47,7 @@ void led_fade_thread(void const *args) {
   }
 }
 
-void putchar_thread(void const *args)
+void test_thread(void const *args)
 { char c= 'x';
 	long start, end;
 	while(1)
@@ -56,21 +56,25 @@ void putchar_thread(void const *args)
   	// serial.putc(c); // blocks 
 		putcharNB(c); // non blocking
 		start = (long) os_time;
-		serial.printf("putchar_thread: bbbbbbbbbbbb \r\n");
+		serial.printf("test_thread: bbbbbbbbbbbb \r\n");
 		end = (long) os_time;
-		serial.printf("systime = %ld, start = %ld, end = %ld, elapsed time %ld .\r\n", 
-					systime, start, end, end-start);
+		serial.printf("test_thread: serial.printf delay= %ld\r\n", end-start);
+		// now check delay using sprintf
+		start = (long) os_time;
+		printfNB("test_thread: printfNB: ccccccccccccc \r\n");
+		end = (long) os_time;
+		serial.printf("test_thread: printfNB delay= %ld\r\n", end-start);
 	}
 }
 
-void putchar_thread1(void const *args)
+void test_thread1(void const *args)
 {   char c= 'y'; 
 	long start, end;
 	while(1)
 	{ Thread::wait(20000); // should be 2.0 sec
     serial.putc(c);
 		start = (long) os_time;
-		serial.printf(" putchar_thread1: aaaaaaaaaaaaa \r\n");
+		serial.printf(" test_thread1: aaaaaaaaaaaaa \r\n");
 		end = (long) os_time;
 		serial.printf("systime = %ld, start = %ld, end = %ld, elapsed time %ld .\r\n", 
 					systime, start, end, end-start);
@@ -123,17 +127,16 @@ void led_blink_periodic(void const *args) {
 
 // systime is not needed since internal ostime runs at same 100 us rate.
 void RealTime(void const *args)
-{ uint32_t timeval; // read just once in case updated by another interrupt
+{ long timeval, diff1, diff2; // read just once in case updated by another interrupt
 	systime++;
-	timeval=os_time; // assume atomic?
+	timeval= (long) os_time; // assume atomic?
 	if ((timeval % 100) == 0) 
 	{ serial.putc('.'); }    // every 10 ms- lets see if blocks
 	if((timeval % 10000) == 0) 
-		{ //serial.putc('!');
-			printfNB("\r\nRealTime: systime -os_time =");
-			printfNB("%d", (long) (systime- os_time)); 
-			printfNB("\r\n RealTime: systime - os_time=%d, systime1 - os_time %d",
-					systime-timeval, systime1 - timeval);
+		{ diff1 = systime - timeval;
+			diff2 = systime1 - timeval;
+				printfNB("\r\n RealTime: systime - os_time=%ld, systime1 - os_time= %ld \n",
+					diff1, diff2);
 		 }    // every 1000 ms- lets see if delays
 }
 
@@ -152,6 +155,7 @@ void RealTime1(void const *args)
 int main() {
 	long value1;
 	long value2;
+	char string[80];
 	uint32_t returnCode;
 	
   // It's always nice to know what version is deployed.
@@ -178,8 +182,8 @@ int main() {
   Thread ledFadeThread(led_fade_thread);
   
 	// Start a thread running character printing
-	Thread putcharThread(putchar_thread);
-	Thread putcharThread1(putchar_thread1);
+	Thread testThread(test_thread);
+	Thread testThread1(test_thread1);
 	
   // Set a timer to periodically call led_blink_periodic().
   RtosTimer ledBlinkTimer(led_blink_periodic);
@@ -194,15 +198,21 @@ int main() {
 	
   serial.printf("Hello, again!\r\n");
 	serial.printf("sizeof(int) = %d, sizeof(long) = %d\n", sizeof(int), sizeof(long));
+	sprintf(string,"int %d, long %ld \n", (int) 0x8000, (long) 0x7fffffff);
+	serial.printf("test number print %s \r\n", string);
+	// turn off interrupt to allow only one process to print
+	__disable_irq();
+	printfNB("\n using printNFB: int %d, long %ld \n", (int) 0x8000, (long) 0x7fffffff);
+	__enable_irq();
 	
 	// look at status of a thread
 	
-	value1 = putcharThread.get_state();
-	value2 = putcharThread1.get_state();
+	value1 = testThread.get_state();
+	value2 = testThread1.get_state();
 		
-	 serial.printf("putcharThread: ");
+	 serial.printf("testThread: ");
 	 print_thread_status(value1);
-	 serial.printf("putcharThread1: ");
+	 serial.printf("testThread1: ");
 	 print_thread_status(value2);
 	
 	

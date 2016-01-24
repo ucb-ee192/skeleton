@@ -3,11 +3,14 @@
 /*  printbuf.c:  Low Level print ring buffer  Routines                               */
 /*                                                                     */
 /***********************************************************************/
+#include <stdio.h>
+#include <stdarg.h>
 
 #define CR     0x0D
 #define TEMT 0x40	/* serial COMTX empty */
 extern int write (int file, char * ptr, int len);
 int putchar_buf(int);
+int putcharNB(int);
 
 
 /* Background non-blocking print using ring buffer */
@@ -15,6 +18,19 @@ int putchar_buf(int);
 char printbuffer[PRNBUFSZ];
 int prnbuf_count = 0;   /* number of characters in buffer */
 int prnbuf_pos = 0;   /* location to store characters */
+
+
+int printfNB(const char *format, ...)
+{  char buffer[128]; int i;
+	char c;
+	int val;
+  va_list args;     
+  va_start( args, format );
+  val = vsprintf(buffer, format, args );   // print to string using variable arguments
+	for(i = 0; i < 128 && buffer[i]!= '\0'; i++)    // copy string to print buffer
+	{ putcharNB((int)buffer[i]); }
+	return(val);
+}
 
 
 // overload putchar to use non-blocking print to ring buffer instead
