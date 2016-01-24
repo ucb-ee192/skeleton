@@ -212,8 +212,8 @@
             <AdsLsun>1</AdsLsun>
             <AdsLven>1</AdsLven>
             <AdsLsxf>1</AdsLsxf>
-            <RvctClst>0</RvctClst>
-            <GenPPlst>0</GenPPlst>
+            <RvctClst>1</RvctClst>
+            <GenPPlst>1</GenPPlst>
             <AdsCpuType>"Cortex-M0+"</AdsCpuType>
             <RvctDeviceName></RvctDeviceName>
             <mOS>0</mOS>
@@ -434,11 +434,6 @@
               <FileName>main.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>main.cpp</FilePath>
-            </File>
-            <File>
-              <FileName>printf-stdarg.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\printf-stdarg.c</FilePath>
             </File>
             <File>
               <FileName>printbuf.c</FileName>

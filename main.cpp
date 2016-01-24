@@ -4,7 +4,7 @@
 
 
 /*********************************
-printfNB: is a minimal printf for high speed, and compact space.
+printfNB: if using printf-stdarg, this is a minimal printf for high speed, and compact space.
 types recognized: %d, %s, %x, %X
 
 *****************************/
@@ -53,8 +53,7 @@ void test_thread(void const *args)
 	while(1)
 	{
 		Thread::wait(20000); // should be 2.0 sec
-  	// serial.putc(c); // blocks 
-		putcharNB(c); // non blocking
+  	putcharNB(c); // non blocking putchar
 		start = (long) os_time;
 		serial.printf("test_thread: bbbbbbbbbbbb \r\n");
 		end = (long) os_time;
@@ -76,8 +75,7 @@ void test_thread1(void const *args)
 		start = (long) os_time;
 		serial.printf(" test_thread1: aaaaaaaaaaaaa \r\n");
 		end = (long) os_time;
-		serial.printf("systime = %ld, start = %ld, end = %ld, elapsed time %ld .\r\n", 
-					systime, start, end, end-start);
+		serial.printf("test_thread1: serial.printf delay= %ld\r\n", end-start);
 	}
 }
 
@@ -92,8 +90,7 @@ void print_thread(void const *args)
 { char c; int index;
 	while(1)
 	{	Thread::wait(1000); // should be 0.1 sec}
-	/* called from interrupt routine */
-  	serial.putc('z');
+	// process print buffer in thread, so won't block
 		while (prnbuf_count > 0)  /* there are characters to print */
 		{  index = prnbuf_pos - prnbuf_count;
        if(index < 0) index = index +PRNBUFSZ;  /* wrap around */
@@ -103,7 +100,6 @@ void print_thread(void const *args)
 		}
 	}
 }
-
 	
 	
 void print_thread_status(long value)
@@ -131,10 +127,10 @@ void RealTime(void const *args)
 	systime++;
 	timeval= (long) os_time; // assume atomic?
 	if ((timeval % 100) == 0) 
-	{ serial.putc('.'); }    // every 10 ms- lets see if blocks
+	{ putcharNB('.'); }    // don't use regular printf in interrupt routine since mutex...
 	if((timeval % 10000) == 0) 
-		{ diff1 = systime - timeval;
-			diff2 = systime1 - timeval;
+		{ diff1 = (systime<<1) - timeval;  // main clock at 100 us
+			diff2 = (systime1<<1) - timeval; // user timer at 200 us
 				printfNB("\r\n RealTime: systime - os_time=%ld, systime1 - os_time= %ld \n",
 					diff1, diff2);
 		 }    // every 1000 ms- lets see if delays
@@ -155,14 +151,12 @@ void RealTime1(void const *args)
 int main() {
 	long value1;
 	long value2;
-	char string[80];
 	uint32_t returnCode;
 	
   // It's always nice to know what version is deployed.
   serial.printf("\n\r Built " __DATE__ " " __TIME__ "\r\n");
   returnCode = SysTick_Config ((uint32_t)(SystemCoreClock / 10000)); //100us granularity
 	serial.printf("SysTick: returnCode: 0x%lx ", returnCode);
-	serial.printf("SysTick: Load %lx ", SysTick->LOAD);
 	serial.printf("starting time %ld |", os_time);
 	
   // Quick blink on startup.
@@ -181,7 +175,7 @@ int main() {
   // Start a thread running led_fade_thread().
   Thread ledFadeThread(led_fade_thread);
   
-	// Start a thread running character printing
+	// Start some threads running character printing
 	Thread testThread(test_thread);
 	Thread testThread1(test_thread1);
 	
@@ -189,17 +183,18 @@ int main() {
   RtosTimer ledBlinkTimer(led_blink_periodic);
   ledBlinkTimer.start(1000);
 	
-	// RtosTimer realTimeTimer(RealTime,osTimerPeriodic, NULL);
+	// start real time clock at 200 us NOTE only need 1 main RT ``super loop''
+	/*** CAUTION - this gets BLOD at 200 us ***/
+	
 	RtosTimer realTimeTimer(RealTime);
 	realTimeTimer.start(2); // .2 millisecond timing
-	// RtosTimer realTimeTimer(RealTime,osTimerPeriodic, NULL);
+	// second rtos with no calculations
 	RtosTimer realTimeTimer1(RealTime1);
 	realTimeTimer1.start(2); // 0.2 millisecond timing
 	
   serial.printf("Hello, again!\r\n");
 	serial.printf("sizeof(int) = %d, sizeof(long) = %d\n", sizeof(int), sizeof(long));
-	sprintf(string,"int %d, long %ld \n", (int) 0x8000, (long) 0x7fffffff);
-	serial.printf("test number print %s \r\n", string);
+	
 	// turn off interrupt to allow only one process to print
 	__disable_irq();
 	printfNB("\n using printNFB: int %d, long %ld \n", (int) 0x8000, (long) 0x7fffffff);
