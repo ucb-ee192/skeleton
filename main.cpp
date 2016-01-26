@@ -55,14 +55,14 @@ void test_thread(void const *args)
 		Thread::wait(20000); // should be 2.0 sec
   	putcharNB(c); // non blocking putchar
 		start = (long) os_time;
-		serial.printf("test_thread: bbbbbbbbbbbb \r\n");
+		serial.printf("\r\n test_thread: bbbbbbbbbbbb start=%ld\r\n",start);
 		end = (long) os_time;
 		serial.printf("test_thread: serial.printf delay= %ld\r\n", end-start);
 		// now check delay using sprintf
 		start = (long) os_time;
 		printfNB("test_thread: printfNB: ccccccccccccc \r\n");
 		end = (long) os_time;
-		serial.printf("test_thread: printfNB delay= %ld\r\n", end-start);
+		serial.printf("test_thread: printfNB delay= %ld, end =%ld\r\n", end-start,end);
 	}
 }
 
@@ -73,7 +73,7 @@ void test_thread1(void const *args)
 	{ Thread::wait(20000); // should be 2.0 sec
     serial.putc(c);
 		start = (long) os_time;
-		serial.printf(" test_thread1: aaaaaaaaaaaaa \r\n");
+		serial.printf("\r\n test_thread1: aaaaaaaaaaaaa start=%ld\r\n", start);
 		end = (long) os_time;
 		serial.printf("test_thread1: serial.printf delay= %ld\r\n", end-start);
 	}
@@ -128,22 +128,24 @@ void RealTime(void const *args)
 	timeval= (long) os_time; // assume atomic?
 	if ((timeval % 100) == 0) 
 	{ putcharNB('.'); }    // don't use regular printf in interrupt routine since mutex...
-	if((timeval % 10000) == 0) 
+	if((systime % 10000) == 0) 
 		{ diff1 = (systime<<1) - timeval;  // main clock at 100 us
 			diff2 = (systime1<<1) - timeval; // user timer at 200 us
-				printfNB("\r\n RealTime: systime - os_time=%ld, systime1 - os_time= %ld \n",
-					diff1, diff2);
+				printfNB("\r\n RealTime: ostime=%ld systime - os_time=%ld, systime1 - os_time= %ld \n",
+					timeval,diff1, diff2);
 		 }    // every 1000 ms- lets see if delays
 }
 
 // systime is not needed since internal ostime runs at same 100 us rate.
 void RealTime1(void const *args)
-{ systime1++;
-//	if ((os_time % 100) == 0) 
-//	{ serial.putc('.'); }    // every 10 ms- lets see if blocks
-//	if((os_time % 10000) == 0) 
-//		{ serial.printf("RealTime1: systime1 - os_time=%ld .", systime1-os_time);
-//		 }    // every 1000 ms- lets see if delays
+{ long timeval;
+	systime1++;
+	timeval= (long) os_time; // assume atomic?
+	if((systime1 % 10000) == 0) 
+		{ printfNB("\r\n RealTime1: ostime=%ld systime1 %ld\n",
+					timeval,systime1);
+		 }    // every 1000 ms- lets see if delays
+
 }
 
 
@@ -193,7 +195,7 @@ int main() {
 	realTimeTimer1.start(2); // 0.2 millisecond timing
 	
   serial.printf("Hello, again!\r\n");
-	serial.printf("sizeof(int) = %d, sizeof(long) = %d\n", sizeof(int), sizeof(long));
+	serial.printf("sizeof(int) = %d, sizeof(long) = %d\n\r", sizeof(int), sizeof(long));
 	
 	// turn off interrupt to allow only one process to print
 	__disable_irq();
