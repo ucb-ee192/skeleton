@@ -14,7 +14,7 @@ int putcharNB(int);
 
 
 /* Background non-blocking print using ring buffer */
-#define PRNBUFSZ 0x100
+#define PRNBUFSZ 0x400
 char printbuffer[PRNBUFSZ];
 int prnbuf_count = 0;   /* number of characters in buffer */
 int prnbuf_pos = 0;   /* location to store characters */

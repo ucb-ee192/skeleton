@@ -52,7 +52,7 @@ void test_thread(void const *args)
 	long start, end;
 	while(1)
 	{
-		Thread::wait(20000); // should be 2.0 sec
+		Thread::wait(10000); // should be 1.0 sec
   	putcharNB(c); // non blocking putchar
 		start = (long) os_time;
 		serial.printf("\r\n test_thread: bbbbbbbbbbbb start=%ld\r\n",start);
@@ -70,7 +70,7 @@ void test_thread1(void const *args)
 {   char c= 'y'; 
 	long start, end;
 	while(1)
-	{ Thread::wait(20000); // should be 2.0 sec
+	{ Thread::wait(10000); // should be 0.1 sec
     serial.putc(c);
 		start = (long) os_time;
 		serial.printf("\r\n test_thread1: aaaaaaaaaaaaa start=%ld\r\n", start);
@@ -89,7 +89,7 @@ extern int prnbuf_pos;   /* location to store characters */
 void print_thread(void const *args)
 { char c; int index;
 	while(1)
-	{	Thread::wait(1000); // should be 0.1 sec}
+	{	Thread::wait(500); // should be 0.05 sec}
 	// process print buffer in thread, so won't block
 		while (prnbuf_count > 0)  /* there are characters to print */
 		{  index = prnbuf_pos - prnbuf_count;
@@ -128,7 +128,7 @@ void RealTime(void const *args)
 	timeval= (long) os_time; // assume atomic?
 	if ((timeval % 100) == 0) 
 	{ putcharNB('.'); }    // don't use regular printf in interrupt routine since mutex...
-	if((systime % 10000) == 0) 
+	if((systime % 1000) == 0) 
 		{ diff1 = (systime<<1) - timeval;  // main clock at 100 us
 			diff2 = (systime1<<1) - timeval; // user timer at 200 us
 				printfNB("\r\n RealTime: ostime=%ld systime - os_time=%ld, systime1 - os_time= %ld \n",
@@ -141,11 +141,10 @@ void RealTime1(void const *args)
 { long timeval;
 	systime1++;
 	timeval= (long) os_time; // assume atomic?
-	if((systime1 % 10000) == 0) 
+	if((systime1 % 1000) == 0) 
 		{ printfNB("\r\n RealTime1: ostime=%ld systime1 %ld\n",
 					timeval,systime1);
 		 }    // every 1000 ms- lets see if delays
-
 }
 
 
