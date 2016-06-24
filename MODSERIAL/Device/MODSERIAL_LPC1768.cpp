@@ -18,7 +18,7 @@ void MODSERIAL::initDevice(void) {
 
 bool MODSERIAL::txIsBusy( void ) 
 { 
-    return ( ((LPC_UART_TypeDef*)_base)->LSR & ( 3UL << 5 ) == 0 ) ? true : false; 
+    return ( (((LPC_UART_TypeDef*)_base)->LSR & ( 1UL << 6 )) == 0 ) ? true : false; 
 } 
 
 #endif
